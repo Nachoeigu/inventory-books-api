@@ -1,7 +1,6 @@
 import asyncio
 import aiohttp
 import random
-from h11 import Data
 from constants import basic_headers
 from lxml import html
 import re
