@@ -5,40 +5,61 @@ import time
 from constants import basic_headers
 from lxml import html
 import re
+import pandas as pd
+from datetime import datetime
 
 class Data_Extractor:
-    def __init__(self):
+    def __init__(self, list_of_urls:list=None):
         #Here we will save the responses
         self.responses = []
+        if list_of_urls is None:
+            pass
+        else:
+            self.list_of_urls = list_of_urls
 
-    async def get_books(self, session, number:int):
-        data = await session.get(f'https://books.toscrape.com/catalogue/page-{number}.html', headers = random.choice(basic_headers))
-        #We convert it into HTML object
-        self.responses.append(html.fromstring(await data.text()))
-        print(f"Scraped page Nº {number}")
-    
+    async def get_books(self, session, mode = True, number:int=None, book_url:str=None):
+        #If mode = True, we want to obtain the urls of each book, if its False we want to scrape each book url
+        if mode == True:
+            data = await session.get(f'https://books.toscrape.com/catalogue/page-{number}.html', headers = random.choice(basic_headers))
+            #We convert it into HTML object
+            self.responses.append(html.fromstring(await data.text()))
+            print(f"Obtaining URLs from page Nº {number}")
+
+        else:
+            data = await session.get(f'{book_url}', headers = random.choice(basic_headers))
+            #We convert it into HTML object
+            self.responses.append(html.fromstring(await data.text()))
+            print(f"Obtaining details in page {book_url}")            
 
     #This function will gather all the tasks in a list so then we can call the list and execute the tasks asynchronously
-    async def defining_tasks(self, session):
+    async def defining_tasks(self, session, mode):
         tasks = []
-        #For the BWIN case:
-        for number in range(1,50):
-            #With this syntaxis, we create the name of the tasks automatically
-            task = self.get_books(session, number)
-            tasks.append(task)
+        if mode == True:
+            #We have 50 pages in the site
+            for number in range(1,50):
+                #With this syntaxis, we create the name of the tasks automatically
+                task = self.get_books(session, mode, number)
+                tasks.append(task)
 
+        else:  
+            for url in self.list_of_urls:
+                task = self.get_books(session, mode, book_url = url)
+                tasks.append(task)
         return tasks
 
     #With this funcion, we execute asynchronously the tasks
-    async def executing_tasks(self):
+    async def executing_tasks(self, mode):
         async with aiohttp.ClientSession() as session:
-            tasks = await self.defining_tasks(session)
+            tasks = await self.defining_tasks(session, mode)
             await asyncio.gather(*tasks)
 
     #This function is which we will use each time we instance the class
-    def main(self):
+    def main(self, mode:bool):
         i = time.time()
-        asyncio.run(self.executing_tasks())
+        if mode == True:
+            asyncio.run(self.executing_tasks(mode))
+        else:
+            asyncio.run(self.executing_tasks(mode))
         print(time.time()-i)
         return self.responses
 
@@ -46,41 +67,79 @@ class Data_Transformation(Data_Extractor):
     
     def __init__(self, data_extractor_responses):
         self.responses = data_extractor_responses.responses
-        self.items = []
-        self.prices_in_eur = []
-        self.ratings = []
-        self.stock = []
         self.url = []
 
     def __flatten_list(self):
         self.url = [item for sublist in self.url for item in sublist]
-        self.ratings = [item for sublist in self.ratings for item in sublist]
-        self.items = [item for sublist in self.items for item in sublist]
-        self.prices_in_eur = [item for sublist in self.prices_in_eur for item in sublist]
-        self.stock = [item for sublist in self.stock for item in sublist]
+        
+    def __text_to_int(self, rating:str):
+        if rating == 'one':
+            return 1
+        if rating == 'two':
+            return 2
+        if rating == 'three':
+            return 3
+        if rating == 'four':
+            return 4
+        if rating == 'five':
+            return 5
 
-    def cleaning_html(self):
+    def cleaning_html(self, mode:bool):
+        #If mode = True, we parse for URLs, if False we scrape the details of each book url
+        self.date = []
+        self.upc_code = []
+        self.title = []
+        self.price = []
+        self.stock_units = []
+        self.category = []
+        self.rating = []
+        self.reviews = []
+        
         for response in self.responses:
-            enlaces = response.xpath("//ol//li//div[@class='image_container']//a/@href")
-            enlaces = list(map(lambda x :"https://books.toscrape.com/catalogue/" + x, enlaces))
-            stars = response.xpath("//ol//li//p[contains(@class, 'star-rating')]/@class")
-            #We remove unnecesary words for its value
-            stars = list(map(lambda x: x.replace("star-rating ", ''), stars))
-            titles = response.xpath("//ol//li//h3//a/@title")
-            prices = response.xpath("//ol//li//div[@class='product_price']//p[@class='price_color']/text()")
-            #We remove the symbol of the coin
-            prices = list(map(lambda x: re.sub("£", "", x), prices))
-            availability = response.xpath("//ol//li//div[@class='product_price']//p[contains(@class,('availability'))]//text()")
-            availability = list(map(lambda x : x.replace("\n","").strip(), availability))
-            availability = ['Out of stock' if item.replace("\n","").strip() == '' else item.replace("\n","").strip() for item in availability]
-            self.url.append(enlaces)
-            self.ratings.append(stars)
-            self.items.append(titles)
-            self.prices_in_eur.append(prices)
-            self.stock.append(availability)
+            if mode == True:
+                enlaces = response.xpath("//ol//li//div[@class='image_container']//a/@href")
+                enlaces = list(map(lambda x :"https://books.toscrape.com/catalogue/" + x, enlaces))
+                self.url.append(enlaces)
+            
+            else:
+                category = response.xpath("//ul[@class='breadcrumb']//li[not(@class)]//a//text()")[-1]
+                title = response.xpath("//h1/text()")[0]
+                price = response.xpath("//div[contains(@class, 'product_main')]//p[@class='price_color']//text()")[0].replace("£", "") 
+                stock_units = response.xpath("//div[contains(@class, 'product_main')]//p[contains(@class,'availability')]//text()")[-1].strip()
+                stock_units = re.search('[0-9]{1,}', stock_units).group()
+                stars = response.xpath("//div[contains(@class,'product_main')]//p[contains(@class, 'star-rating')]/@class")[0].replace("star-rating ", '').lower()
+                stars = self.__text_to_int(stars)
+                upc_code = response.xpath("//tr/th[contains(text(),'UPC')]//parent::tr//td//text()")[0]
+                reviews = response.xpath("//tr/th[contains(text(),'Number of reviews')]//parent::tr//td//text()")[0]
+                date = datetime.today().date()
 
-            self.__flatten_list()
-        
-        
 
+                self.date.append(date)
+                self.upc_code.append(upc_code)
+                self.title.append(title)
+                self.price.append(price)
+                self.stock_units.append(stock_units)
+                self.category.append(category)
+                self.rating.append(stars)
+                self.reviews.append(reviews)
+                
+        self.__flatten_list()
+
+
+    def to_pandas(self):
+        df = pd.DataFrame({
+                    "last_update":self.date,
+                    "upc_code":self.upc_code,
+                    "title":self.title,
+                    "price_in_eur":self.price,
+                    "stock_units":self.stock_units,
+                    "category": self.category,
+                    "rating":self.rating,
+                    "reviews": self.reviews
+                    })
+        df.to_csv('dataframe2.csv')
+
+    def return_urls(self):       
+        return self.url
+        
 
