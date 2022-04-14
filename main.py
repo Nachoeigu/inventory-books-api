@@ -1,5 +1,5 @@
 from model import Data_Extractor, Data_Transformation
-import time
+
 #First we make requests in the catalog
 data_extraction = Data_Extractor()
 data_extraction.main(mode = True)
