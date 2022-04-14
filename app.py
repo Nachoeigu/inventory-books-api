@@ -100,7 +100,7 @@ def books_by_prices(less_than:int=None, more_than:int=None,equal:int=None):
             if price > more_than:
                 case = { 
                 'id': str(df.iloc[idx]['upc_code']),
-                'name': df['items'].iloc[idx],
+                'name': df['title'].iloc[idx],
                 'price_in_eur': df['price_in_eur'].iloc[idx],
                 'rating': str(df['rating'].iloc[idx]),
                 'stock_units': str(df['stock_units'].iloc[idx]),
@@ -113,7 +113,7 @@ def books_by_prices(less_than:int=None, more_than:int=None,equal:int=None):
             if price == equal:
                 case = { 
                 'id': str(df.iloc[idx]['upc_code']),
-                'name': df['items'].iloc[idx],
+                'name': df['title'].iloc[idx],
                 'price_in_eur': df['price_in_eur'].iloc[idx],
                 'rating': str(df['rating'].iloc[idx]),
                 'stock_units': str(df['stock_units'].iloc[idx]),
