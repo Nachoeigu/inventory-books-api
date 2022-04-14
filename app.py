@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 import pandas as pd
 
-df = pd.read_csv('dataframe2.csv')
+df = pd.read_csv('dataframe.csv')
 
 app = FastAPI()
 
@@ -31,7 +31,8 @@ def book_details(id:str):
                 'name': df['title'].iloc[idx],
                 'price_in_eur': str(df['price_in_eur'].iloc[idx]),
                 'rating': str(df['rating'].iloc[idx]),
-                'stock_units': str(df['stock_units'].iloc[idx])
+                'stock_units': str(df['stock_units'].iloc[idx]),
+                'link': df['links'].iloc[idx]
                 }
                 }
     return {
@@ -49,7 +50,8 @@ def books_with_your_desired_rating(number:int):
                 'book': df['title'].iloc[idx],
                 'price_in_eur': str(df['price_in_eur'].iloc[idx]),
                 'rating': str(df['rating'].iloc[idx]),
-                'stock_units': str(df['stock_units'].iloc[idx])
+                'stock_units': str(df['stock_units'].iloc[idx]),
+                'link': df['links'].iloc[idx]
                 }
             cases_with_rating.append(case)
         else:
@@ -78,7 +80,8 @@ def books_by_prices(less_than:int=None, more_than:int=None,equal:int=None):
                 'name': df['title'].iloc[idx],
                 'price_in_eur': df['price_in_eur'].iloc[idx],
                 'rating': str(df['rating'].iloc[idx]),
-                'stock_units': str(df['stock_units'].iloc[idx])
+                'stock_units': str(df['stock_units'].iloc[idx]),
+                'link': df['links'].iloc[idx]
                 }
                 prices.append(case)
 
@@ -90,7 +93,8 @@ def books_by_prices(less_than:int=None, more_than:int=None,equal:int=None):
                 'name': df['items'].iloc[idx],
                 'price_in_eur': df['price_in_eur'].iloc[idx],
                 'rating': str(df['rating'].iloc[idx]),
-                'stock_units': str(df['stock_units'].iloc[idx])
+                'stock_units': str(df['stock_units'].iloc[idx]),
+                'link': df['links'].iloc[idx]
                 }
                 prices.append(case)
     if equal is not None:
@@ -101,7 +105,8 @@ def books_by_prices(less_than:int=None, more_than:int=None,equal:int=None):
                 'name': df['items'].iloc[idx],
                 'price_in_eur': df['price_in_eur'].iloc[idx],
                 'rating': str(df['rating'].iloc[idx]),
-                'stock_units': str(df['stock_units'].iloc[idx])
+                'stock_units': str(df['stock_units'].iloc[idx]),
+                'link': df['links'].iloc[idx]
                 }
                 prices.append(case)
     
@@ -127,7 +132,8 @@ def books_without_stock():
             'name': df['title'].iloc[idx],
             'price_in_eur': df['price_in_eur'].iloc[idx],
             'rating': str(df['rating'].iloc[idx]),
-            'stock_units': str(df['stock_units'].iloc[idx])
+            'stock_units': str(df['stock_units'].iloc[idx]),
+            'link': df['links'].iloc[idx]
             }
             cases.append(case)
 
