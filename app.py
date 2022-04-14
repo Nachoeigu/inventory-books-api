@@ -6,6 +6,13 @@ df = pd.read_csv('dataframe.csv')
 app = FastAPI()
 
 #With this query you retrieve all the books with its IDs
+@app.get('/')
+async def root():
+    return {
+        'Data':'Welcome to Book Store API. Use the /docs path so you can know our endpoints :)'
+    }
+
+#With this query you retrieve all the books with its IDs
 @app.get('/get-books')
 async def get_books():
     list_of_combinations = []
@@ -47,6 +54,7 @@ def books_with_your_desired_rating(number:int):
         rating = int(df['rating'].iloc[idx])
         if rating == number:
             case = { 
+                'id': str(df.iloc[idx]['upc_code']),
                 'book': df['title'].iloc[idx],
                 'price_in_eur': str(df['price_in_eur'].iloc[idx]),
                 'rating': str(df['rating'].iloc[idx]),
@@ -77,6 +85,7 @@ def books_by_prices(less_than:int=None, more_than:int=None,equal:int=None):
             price = int(df['price_in_eur'].iloc[idx])
             if price < less_than:
                 case = { 
+                'id': str(df.iloc[idx]['upc_code']),
                 'name': df['title'].iloc[idx],
                 'price_in_eur': df['price_in_eur'].iloc[idx],
                 'rating': str(df['rating'].iloc[idx]),
@@ -90,6 +99,7 @@ def books_by_prices(less_than:int=None, more_than:int=None,equal:int=None):
             price = int(df['price_in_eur'].iloc[idx])
             if price > more_than:
                 case = { 
+                'id': str(df.iloc[idx]['upc_code']),
                 'name': df['items'].iloc[idx],
                 'price_in_eur': df['price_in_eur'].iloc[idx],
                 'rating': str(df['rating'].iloc[idx]),
@@ -102,6 +112,7 @@ def books_by_prices(less_than:int=None, more_than:int=None,equal:int=None):
             price = int(df['price_in_eur'].iloc[idx])
             if price == equal:
                 case = { 
+                'id': str(df.iloc[idx]['upc_code']),
                 'name': df['items'].iloc[idx],
                 'price_in_eur': df['price_in_eur'].iloc[idx],
                 'rating': str(df['rating'].iloc[idx]),
@@ -129,6 +140,7 @@ def books_without_stock():
         stock_units = int(df['stock_units'].iloc[idx])
         if stock_units == 0:
             case = { 
+            'id': str(df.iloc[idx]['upc_code']),
             'name': df['title'].iloc[idx],
             'price_in_eur': df['price_in_eur'].iloc[idx],
             'rating': str(df['rating'].iloc[idx]),
