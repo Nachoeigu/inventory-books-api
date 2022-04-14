@@ -21,14 +21,14 @@ class Data_Extractor:
         #If mode = True, we want to obtain the urls of each book, if its False we want to scrape each book url
         if mode == True:
             data = await session.get(f'https://books.toscrape.com/catalogue/page-{number}.html', headers = random.choice(basic_headers))
-            #We convert it into HTML object
+            #We convert it into HTML object and we use a tuple because we want to conserv the url in order to add it in the API
             self.responses.append(html.fromstring(await data.text()))
             print(f"Obtaining URLs from page Nº {number}")
 
         else:
             data = await session.get(f'{book_url}', headers = random.choice(basic_headers))
             #We convert it into HTML object
-            self.responses.append(html.fromstring(await data.text()))
+            self.responses.append((html.fromstring(await data.text()), book_url))
             print(f"Obtaining details in page {book_url}")            
 
     #This function will gather all the tasks in a list so then we can call the list and execute the tasks asynchronously
@@ -94,6 +94,7 @@ class Data_Transformation(Data_Extractor):
         self.category = []
         self.rating = []
         self.reviews = []
+        self.links = []
         
         for response in self.responses:
             if mode == True:
@@ -102,16 +103,18 @@ class Data_Transformation(Data_Extractor):
                 self.url.append(enlaces)
             
             else:
-                category = response.xpath("//ul[@class='breadcrumb']//li[not(@class)]//a//text()")[-1]
-                title = response.xpath("//h1/text()")[0]
-                price = response.xpath("//div[contains(@class, 'product_main')]//p[@class='price_color']//text()")[0].replace("£", "") 
-                stock_units = response.xpath("//div[contains(@class, 'product_main')]//p[contains(@class,'availability')]//text()")[-1].strip()
+                #response is a tuple: in the first element we have the response, in the second the url of that resopnse
+                category = response[0].xpath("//ul[@class='breadcrumb']//li[not(@class)]//a//text()")[-1]
+                title = response[0].xpath("//h1/text()")[0]
+                price = response[0].xpath("//div[contains(@class, 'product_main')]//p[@class='price_color']//text()")[0].replace("£", "") 
+                stock_units = response[0].xpath("//div[contains(@class, 'product_main')]//p[contains(@class,'availability')]//text()")[-1].strip()
                 stock_units = re.search('[0-9]{1,}', stock_units).group()
-                stars = response.xpath("//div[contains(@class,'product_main')]//p[contains(@class, 'star-rating')]/@class")[0].replace("star-rating ", '').lower()
+                stars = response[0].xpath("//div[contains(@class,'product_main')]//p[contains(@class, 'star-rating')]/@class")[0].replace("star-rating ", '').lower()
                 stars = self.__text_to_int(stars)
-                upc_code = response.xpath("//tr/th[contains(text(),'UPC')]//parent::tr//td//text()")[0]
-                reviews = response.xpath("//tr/th[contains(text(),'Number of reviews')]//parent::tr//td//text()")[0]
+                upc_code = response[0].xpath("//tr/th[contains(text(),'UPC')]//parent::tr//td//text()")[0]
+                reviews = response[0].xpath("//tr/th[contains(text(),'Number of reviews')]//parent::tr//td//text()")[0]
                 date = datetime.today().date()
+                link = response[1]
 
 
                 self.date.append(date)
@@ -122,6 +125,7 @@ class Data_Transformation(Data_Extractor):
                 self.category.append(category)
                 self.rating.append(stars)
                 self.reviews.append(reviews)
+                self.links.append(link)
                 
         self.__flatten_list()
 
@@ -135,11 +139,14 @@ class Data_Transformation(Data_Extractor):
                     "stock_units":self.stock_units,
                     "category": self.category,
                     "rating":self.rating,
-                    "reviews": self.reviews
+                    "reviews": self.reviews,
+                    "links": self.links
                     })
-        df.to_csv('dataframe2.csv')
+        df.to_csv('dataframe.csv')
 
     def return_urls(self):       
         return self.url
+        
+
         
 
